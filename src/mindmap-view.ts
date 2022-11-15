@@ -1,3 +1,4 @@
+import * as d3 from 'd3';
 import { EventRef, ItemView, Menu, Vault, Workspace, WorkspaceLeaf } from 'obsidian';
 import { transform } from 'markmap-lib';
 import { Markmap } from 'markmap-view';
@@ -8,6 +9,11 @@ import { createSVG, getComputedCss, removeExistingSVG } from './markmap-svg';
 import { copyImageToClipboard } from './copy-image';
 import { MindMapSettings } from './settings';
 import { IMarkmapOptions } from 'markmap-view/types/types';
+
+
+export function noop(): void {
+  // noop
+}
 
 export default class MindmapView extends ItemView {
     filePath: string;
@@ -24,6 +30,7 @@ export default class MindmapView extends ItemView {
     isLeafPinned: boolean;
     pinAction: HTMLElement;
     settings: MindMapSettings;
+    runningMarkmap : Markmap;
 
     getViewType(): string {
         return MM_VIEW_TYPE;
@@ -68,7 +75,8 @@ export default class MindmapView extends ItemView {
         this.obsMarkmap = new ObsidianMarkmap(this.vault);
         this.registerActiveLeafUpdate();
         this.listeners = [
-            this.workspace.on('layout-ready', () => this.update()),
+            // fix not found layout-ready declare
+            //this.workspace.on('layout-ready', () => this.update()),
             this.workspace.on('resize', () => this.update()),
             this.workspace.on('css-change', () => this.update()),
             this.leaf.on('group-change', (group) => this.updateLinkedLeaf(group, this))
@@ -125,7 +133,10 @@ export default class MindmapView extends ItemView {
             } else {
                 const { root, features } = await this.transformMarkdown();
                 this.displayEmpty(false);
+                //console.log("get svg---")
+                //console.log(this.svg)
                 this.svg = createSVG(this.containerEl, this.settings.lineHeight);
+                //console.log("===create new svg===")
                 this.renderMarkmap(root, this.svg);
             }
         }
@@ -187,9 +198,32 @@ export default class MindmapView extends ItemView {
           };
           try {
             const markmapSVG = Markmap.create(svg, options, root);
+            if (this.runningMarkmap) {
+              //console.log("get state ----");
+              //console.log(this.runningMarkmap.state);
+             
+              //const { id } = this.runningMarkmap.state;
+              //console.log("get id:" + id + "-g") 
+              
+              // use old transform to re-transform
+              this.useOldTransform(this.runningMarkmap, markmapSVG);
+
+              //console.log("just assigned svg ----");
+              //console.log(this.svg)
+            }
+            this.runningMarkmap = markmapSVG;
           } catch (error) {
               console.error(error);
           }
+    }
+
+    async useOldTransform(oldMarkMap: Markmap, newMarkMap: Markmap): Promise<void> {
+      const oldTransform = d3.zoomTransform(oldMarkMap.svg.node());
+
+      return newMarkMap.transition(newMarkMap.svg)
+        .call(newMarkMap.zoom.transform, oldTransform)
+        .end()
+        .catch (noop);  
     }
 
     displayEmpty(display: boolean) {
