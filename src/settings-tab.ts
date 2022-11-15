@@ -92,5 +92,14 @@ export class MindMapSettingsTab extends PluginSettingTab {
                         this.plugin.settings.paddingX = Number.parseInt(value);
                         this.plugin.saveData(this.plugin.settings);
                     }));
+
+        new Setting(containerEl)
+            .setName('Readapt all the time')
+            .setDesc('whether need to readapt size all the time even editing the same markdown file.')
+            .addToggle(toggle => toggle.setValue(this.plugin.settings.readaptAllTheTime)
+              .onChange((value) => {
+                this.plugin.settings.readaptAllTheTime = value;
+                this.plugin.saveData(this.plugin.settings);
+              }));
     }
 }

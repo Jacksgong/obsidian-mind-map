@@ -205,8 +205,10 @@ export default class MindmapView extends ItemView {
               //const { id } = this.runningMarkmap.state;
               //console.log("get id:" + id + "-g") 
               
+              if (!this.settings.readaptAllTheTime) {
+                this.useOldTransform(this.runningMarkmap, markmapSVG);
+              }
               // use old transform to re-transform
-              this.useOldTransform(this.runningMarkmap, markmapSVG);
 
               //console.log("just assigned svg ----");
               //console.log(this.svg)
